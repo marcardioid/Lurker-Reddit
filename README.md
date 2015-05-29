@@ -10,7 +10,7 @@ Run from the command line:
 
 Or, execute: `lurker-reddit-gui.exe`
 
-You can get the executable by downloading and extracting `lurker-reddit.zip` in `\dist`.<br>
+You can get the executable by downloading and extracting `lurker-reddit.zip` in `/dist`.<br>
 You can also build it yourself with `setup.py`.
 
 Default download directory: `root/reddit`
