@@ -15,10 +15,7 @@ def get_submissions(subreddit, count, filter):
     return filter(sr, count)
 
 def get_links(submissions):
-    res = []
-    for sub in submissions:
-        res.append(sub.url)
-    return res
+    return [sub.url for sub in submissions]
 
 def filter_for_imgur(urls):
     res = []
@@ -29,13 +26,11 @@ def filter_for_imgur(urls):
             else:
                 try:
                     response = urllib.request.urlopen(url) # try to find a direct link
-                except urllib.request.HTTPError as e:
-                    continue
-                except urllib.request.URLError as e:
+                except (urllib.request.HTTPError, urllib.request.URLError) as e:
+                    print("Error: Could not find '{}'.".format(url))
                     continue
                 if "image" in get_content_type(response):
                     res.append(url) # found a direct link to image
-                    continue
                 else:
                     print("Found an album! Extracting...")
                     soup = BeautifulSoup(response.read())
@@ -45,9 +40,8 @@ def filter_for_imgur(urls):
         else:
             try:
                 response = urllib.request.urlopen(url)
-            except urllib.request.HTTPError as e:
-                continue
-            except urllib.request.URLError as e:
+            except (urllib.request.HTTPError, urllib.request.URLError) as e:
+                # print("Error: Could not find '{}'.".format(url))
                 continue
             if "image" in get_content_type(response):
                 res.append(url) # direct link to image
@@ -60,12 +54,7 @@ def get_content_type(response):
 
 def get_file_format(content_type):
     short = content_type.split("/")[1]
-    if ("jpg" in short or "jpeg" in short):
-        return "jpg"
-    elif ("gif" in short):
-        return "gif"
-    else:
-        return "png"
+    return short if short in ["jpg", "jpeg", "gif"] else "png"
 
 def download_images(urls, directory):
     actual = 0
@@ -75,16 +64,12 @@ def download_images(urls, directory):
     for i, url in enumerate(urls):
         try:
             response = urllib.request.urlopen(url)
-        except urllib.request.HTTPError as e:
-            print("Could not download "+url)
-            continue
-        except urllib.request.URLError as e:
-            print("Could not download "+url)
+        except (urllib.request.HTTPError, urllib.request.URLError) as e:
+            print("Error: Could not download '{}'.".format(url))
             continue
         content_type = get_content_type(response)
         if "image" in content_type:
-            directory = directory if directory else "reddit"
-            #f = open(directory + "\\"+ url[-11:-4] +"."+get_file_format(content_type), "wb")
+            directory = directory if directory else "images"
             f = open(directory + "\\"+ str(actual + 1) +"."+get_file_format(content_type), "wb")
             file_size = int(response.getheader('Content-Length'))
             file_size_dl = 0
@@ -105,7 +90,7 @@ def download_images(urls, directory):
     if(len(not_read) > 0):
         print("Could not read the following urls:")
         for url in not_read:
-            print(url)
+            print('\t' + url)
     return actual
 
 def get_filters():
@@ -147,11 +132,11 @@ def main():
     args = parse_args()
     print("Contacting Reddit...")
     urls = get_links(get_submissions(args.subreddit, args.count, get_filters()[args.category]))
-    print("Found "+str(len(urls))+" reddit threads.")
+    print("Found {} reddit threads.".format(str(len(urls))))
     urls = filter_for_imgur(urls)
-    print("Found "+str(len(urls))+" image links.")
+    print("Found {} image links.".format(str(len(urls))))
     actual = download_images(urls, args.output)
-    print("Downloaded " + str(actual) + " images to /" + args.output + "." if args.output else "current directory.")
+    print("Downloaded {} images to {}.".format(str(actual), '/' + args.output if args.output else "current directory"))
 
 if __name__ == "__main__":
     main()
